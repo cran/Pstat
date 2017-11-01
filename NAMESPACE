@@ -1,4 +1,4 @@
 exportPattern("^[[:alpha:]]+")
-importFrom("grDevices", "x11","dev.new")
+importFrom("grDevices", "dev.new")
 importFrom("graphics", "abline", "hist", "par", "plot", "text")
 importFrom("stats", "var")

@@ -1,5 +1,5 @@
-Pst <-
-function(data,ci=0,csh=1,va=0,boot=1000,Pw=0,Rp=0,Ri=0,pe=0.95){
+BootPst <-
+function(data,va,opt=0,csh=1,boot=1000,Ri=0,Rp=0,Pw=0,pe=0.95,bars=20){
 
 # function returning the number of values different from Na in a selected column 
 
@@ -61,28 +61,6 @@ else {name[l]=as.character(dat.fra[i,1]);l=l+1;k=k+1;}
 names(vec)=name;
 return(vec);}
 
-# function returning a vector containing the Pst values of the data frame variables  
-
-Pst.val<-function(data,csh=1){
-data=Prep(data);nbpop=nb.pop(data);va=dim(data)[2];data=data[order(data[,1]),];
-if(nbpop==1) return(rep(0,va-1))
-else {v=Pop(data);
-# function returning Pst value of the selected quantitative variable  of a data frame
-Pst.clm<-function(dat,clm){
-m=mean(dat[,clm],na.rm=TRUE); nna.clm=nonNa.clm(dat,clm);
-Sst=(nna.clm-1)*var(dat[,clm],na.rm=TRUE);mp=rep(0,nbpop); vef=rep(0,nbpop); vef[1]=nonNa.clm(dat[1:(v[1]),],clm); q=0;
-if (vef[1]==0) q=1 
-else mp[1]=mean(dat[1:(v[1]),clm],na.rm=TRUE); 
-for (i in 2:nbpop) {vef[i]=nonNa.clm(dat[(sum(v[1:(i-1)])+1):(sum(v[1:i])),],clm);
-if(vef[i]!=0) mp[i]=mean(dat[(sum(v[1:(i-1)])+1):(sum(v[1:i])),clm],na.rm=TRUE) else q=q+1;}
-Ssb=sum(vef*(mp-m)^2);Ssw=Sst-Ssb;
-if ((nna.clm-nbpop+q)*(nbpop-q-1)!=0) {Msw=Ssw/(nna.clm-nbpop+q);Msb=Ssb/(nbpop-q-1);
-return(csh*Msb/(csh*Msb+2*Msw));}
-else {if ((nna.clm-nbpop+q)==0) return(1)
-else return(0);};} 
-pst=rep(0,va-1);for(j in 1:(va-1)) pst[j]=Pst.clm(data,j+1); 
-return(pst);}}
-
 # function returning a vector containing the Pst values of the bootstrap data frames built from the selected quantitative variable
 
 boot.pst.va<-function(data,csh,boot,clm){
@@ -109,23 +87,21 @@ return(v);}
 
 ConInt.pst.va<-function(data,csh,boot,clm,per){
 v=boot.pst.va(data=data,csh=csh,boot=boot,clm=clm);v=sort(v); 
-return(c(v[floor(boot*(1-per)/2+1)],v[ceiling(boot*(per+1)/2)]));}
+print(c(v[floor(boot*(1-per)/2+1)],v[ceiling(boot*(per+1)/2)]));return(v);}
 
-# construction of the output data frame
+# function drawing the histogram of Pst ditribution (from the bootstrap values)
 
-l=length(va);
-for (i in 1:l) {for (j in 2:dim(data)[2]) {if (names(data)[j]==va[i]) va[i]=j-1}};
-va=as.numeric(va);
-if (is.na(sum(va))==TRUE) return("va is not valid!");
-data=Prep(data);data=dat.rem.ind.pop(data,ind=Ri,pop=Rp);data=dat.pw(data,Pw);
-print("Populations sizes are:"); print(Pop(data));
-if (ci!=1) {if (va[1]==0) {Q=dim(data)[2];D=data.frame(Quant_Varia=names(data) [2:Q],Pst_Values=Pst.val(data,csh=csh),row.names=NULL);}
-else {D=data.frame(Quant_Varia=names(data)[va+1], Pst_Values=Pst.val(data,csh=csh)[va],row.names=NULL);};
-return(D);};
-if (ci==1) {if (va[1]==0) {Q=dim(data)[2]; v=rep(0,Q-1);w=rep(0,Q-1); 
- for(i in 1:(Q-1)) {v[i]=ConInt.pst.va(data,csh=csh,boot=boot,clm=i+1,per=pe)[1];w[i]=ConInt.pst.va(data,csh=csh,boot=boot,clm=i+1,per=pe)[2];};
-dat=data.frame(Quant_Varia=names(data)[2:Q], Pst_Values=Pst.val(data,csh=csh), LowBoundCI=v, UpBoundCI=w,row.names=NULL); names(dat)[3]=paste(100*pe,"%_LowBoundCI"); names(dat)[4]=paste(100*pe,"%_UpBoundCI");}
-else {n=length(va);v=rep(0,n);w=rep(0,n); 
-for(i in 1:n) {v[i]=ConInt.pst.va(data,csh=csh,boot=boot,clm=va[i]+1, per=pe)[1]; w[i]=ConInt.pst.va(data,csh=csh,boot=boot,clm=va[i]+1, per=pe)[2];};
-dat=data.frame(Quant_Varia=names(data)[va+1], Pst_Values=Pst.val(data,csh=csh)[va], LowBoundCI=v,UpBoundCI=w,row.names=NULL); names(dat)[3]=paste(100*pe,"%_LowBoundCI");names(dat)[4]=paste(100*pe,"%_UpBoundCI");};
-return(dat);};}
+dis.pst.va<-function(data,csh,boot,clm,bars){
+psts.va=boot.pst.va(data=data,csh=csh,boot=boot,clm=clm);
+hist(psts.va,breaks=c(0:bars)/bars,xlab="Pst",ylab="Frequency",main=c("Pst distribution:",names(data)[clm]),col="gray88");
+return(sort(psts.va));}
+
+# to obtain the output:
+
+for (i in 2:dim(data)[2]) {if (names(data)[i]==va) va=i-1};
+if (is.numeric(va)==FALSE) return("va value does not exist!");
+data=dat.rem.ind.pop(data,ind=Ri,pop=Rp);data=dat.pw(data,pw=Pw);
+print("Populations sizes are:"); print(Pop(data)); 
+if (opt!="ci" & opt!="hist") {print(paste(boot,"bootstrap values:")); return(boot.pst.va(data,csh=csh,boot=boot,clm=va+1));}
+if (opt=="ci") {print(paste(100*pe,"% confidence interval determined by",boot,"bootstrap values:")); return(ConInt.pst.va(data,csh=csh,boot=boot,clm=va+1,per=pe));};
+if (opt=="hist") {print(paste(boot,"bootstrap values and","Pst distribution:"));dev.new(); dis.pst.va(data,csh,boot,va+1,bars);}}

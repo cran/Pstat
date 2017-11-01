@@ -7,11 +7,11 @@ Aitchison transformation
 'AitTrans' calculates log-ratio transformed measurements to account for individual size-effects.
 }
 \usage{
-AitTrans(M)
+AitTrans(data)
 }
-%- maybe also 'usage' for other objects documented here.
+
 \arguments{
-  \item{M}{
+  \item{data}{
 a dataframe with as many rows as individuals. The first column contains the name of the population to which the individual belongs, the others contain quantitative variables.
 }
 }
@@ -31,6 +31,29 @@ Blondeau Da Silva Stephane - Da Silva Anne.
 }
 
 \examples{
-data(test)
-AitTrans(test)
+# data(test)
+# AitTrans(test)
+
+## The function is currently defined as
+function (data) 
+{
+    nonNa.clm <- function(data, clm) {
+        n = dim(data)[1]
+        c = 0
+        for (i in 1:n) if (is.na(data[i, clm])) 
+            c = c + 1
+        return(n - c)
+    }
+    nb.ind = dim(data)[1]
+    nb.va = dim(data)[2] - 1
+    v = rep(0, nb.ind)
+    for (i in 1:nb.ind) {
+        v[i] = 1/(nonNa.clm(t(data[i, -1]), 1)) * sum(log(data[i, 
+            -1], base = 10), na.rm = TRUE)
+        for (j in 1:nb.va) data[i, (j + 1)] = log(data[i, (j + 
+            1)], base = 10) - v[i]
+    }
+    return(data)
+  }
 }
+

@@ -5,7 +5,7 @@
 Example of a data frame
 }
 \description{
-a dataframe containing 200 rows (i.e. 200 individuals). The first column contains the name of the population ("A", "B", "C", "D" and "E") to which the individual belongs, the 11 others contain quantitative measures.
+a dataframe containing 200 rows (i.e. 200 individuals). The first column contains the name of the population ("A", "B", "C", "D" or "E") to which the individual belongs, the 11 others contain quantitative measures.
 }
 \usage{data("test")}
 
