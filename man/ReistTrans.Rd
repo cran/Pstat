@@ -9,7 +9,7 @@ Reist standardization
 }
 
 \usage{
-ReistTrans(data, reg)
+ReistTrans(data, reg, Rp = 0, Ri = 0)
 }
 
 \arguments{
@@ -18,6 +18,12 @@ a dataframe with as many rows as individuals. The first column contains the name
 }
   \item{reg}{
 the name (or the rank) of the variable chosen as the explanatory variable.
+}
+  \item{Rp}{
+a vector containing the names of the populations to be deleted.
+}
+  \item{Ri}{
+a vector containing each number of individual to be deleted. The vector Ri must contain existent individuals, each of them once.
 }
 }
 
@@ -48,42 +54,64 @@ names(test)[9]
 ReistTrans(test,reg=9)
 
 ## The function is currently defined as
-function (data, reg) 
+function (data, reg, Rp = 0, Ri = 0) 
 {
+    dat.rem.ind.pop <- function(data, ind = 0, pop = 0) {
+        data = as.data.frame(data)
+        dat.rem.ind <- function(dat, ind) {
+            nb.rem.ind = length(ind)
+            nb.ind = dim(dat)[1]
+            for (i in 1:nb.rem.ind) dat = dat[row.names(dat)[1:(nb.ind - 
+                i + 1)] != ind[i], ]
+            return(dat)
+        }
+        dat.rem.pop <- function(dat, pop) {
+            nb.rem.pop = length(pop)
+            for (i in 1:nb.rem.pop) dat = dat[dat[, 1] != pop[i], 
+                ]
+            return(dat)
+        }
+        if (ind[1] != 0) 
+            data = dat.rem.ind(data, ind)
+        if (pop[1] != 0) 
+            data = dat.rem.pop(data, pop)
+        return(data)
+    }
     Reitra.va <- function(dat, clm, re) {
         dat = dat[is.finite(dat[, re]), ]
         log.dat = dat
-        m = mean(dat[is.finite(dat[, clm]), re])
-        Q = dim(dat)[2]
+        mea = mean(dat[is.finite(dat[, clm]), re])
         log.dat[, clm] = log(dat[, clm], base = 10)
         log.dat[, re] = log(dat[, re], base = 10)
-        m.clm = mean(log.dat[is.finite(log.dat[, clm]), clm], 
+        mea.clm = mean(log.dat[is.finite(log.dat[, clm]), clm], 
             na.rm = TRUE)
-        m.reg = mean(log.dat[is.finite(log.dat[, clm]), re], 
+        mea.reg = mean(log.dat[is.finite(log.dat[, clm]), re], 
             na.rm = TRUE)
-        a = sum((log.dat[is.finite(log.dat[, clm]), re] - m.reg) * 
+        a = sum((log.dat[is.finite(log.dat[, clm]), re] - mea.reg) * 
             log.dat[is.finite(log.dat[, clm]), clm])/sum((log.dat[is.finite(log.dat[, 
-            clm]), re] - m.reg) * (log.dat[is.finite(log.dat[, 
-            clm]), re] - m.reg))
-        dat[, clm] = log.dat[, clm] - a * (log.dat[, re] - log(m, 
+            clm]), re] - mea.reg) * (log.dat[is.finite(log.dat[, 
+            clm]), re] - mea.reg))
+        dat[, clm] = log.dat[, clm] - a * (log.dat[, re] - log(mea, 
             base = 10))
         return(dat)
     }
-    for (i in 2:dim(data)[2]) {
-        if (names(data)[i] == reg) 
-            reg = i - 1
+    nb.var = dim(data)[2] - 1
+    for (i in 1:nb.var) {
+        if (names(data)[i + 1] == reg) 
+            reg = i
     }
     if (is.numeric(reg) == FALSE) 
         return("reg value does not exist!")
-    Q = dim(data)[2]
+    data = dat.rem.ind.pop(data, ind = Ri, pop = Rp)
     if (reg == 1) 
-        for (i in 3:Q) data = Reitra.va(data, clm = i, re = 2)
+        for (i in 2:nb.var) data = Reitra.va(data, clm = i + 
+            1, re = 2)
     else {
         for (i in 2:reg) data = Reitra.va(data, clm = i, re = reg + 
             1)
-        if (reg < (Q - 1)) 
-            for (j in (reg + 2):Q) data = Reitra.va(data, clm = j, 
-                re = reg + 1)
+        if (reg < nb.var) 
+            for (j in (reg + 1):nb.var) data = Reitra.va(data, 
+                clm = j + 1, re = reg + 1)
     }
     return(data[-(reg + 1)])
   }
